@@ -1,158 +1,250 @@
 # SISTEMA DE TARJETA QROBUS
-# Precio de un viaje
 costo = 11.00
-# Máximo de viajes que se pueden hacer
-# cuando no hay saldo
 limite = 2
 
-# PARTE 1 - DATOS DEL USUARIO
-# Temas 1, 2, 3, 4, 11 y 12
-def hacer_datos(nombre, saldo):
+# La coma es necesaria para que Python la reconozca como tupla de un solo elemento
+fechas = ("XX/YY/ZZ",)
 
+
+# PARTE 1 - DATOS DE LA TARJETA
+def hacer_datos(nombre, saldo):
     datos = {
         "nombre": nombre,
         "saldo": saldo,
         "deuda": 0,
         "viajes": 0
     }
+
+    # return regresa los datos para poder utilizarlos fuera de la función
     return datos
+
+
 def mostrar(datos):
     print("QROBUS")
     print(f"Nombre: {datos['nombre']}")
     print(f"Saldo: ${datos['saldo']:.2f}")
     print(f"Deuda: ${datos['deuda']:.2f}")
     print(f"Viajes a crédito: {datos['viajes']}")
-# PARTE 2 - COBRAR VIAJE
-# Temas 5, 6, 8 y 9
-def cobrar(datos, lista):
-    print("COBRO")
 
+
+# PARTE 2 - HISTORIAL
+def agregar_historial(lista, texto):
+    fecha = fechas[0]
+    dato = (fecha, texto)
+
+    # Agrega los datos
+    lista.append(dato)
+
+
+# PARTE 3 - COBRO DEL VIAJE
+
+def cobrar(datos, lista):
     if datos["saldo"] >= costo:
+        # Si el saldo es suficiente, se descuenta el costo del viaje
         datos["saldo"] = datos["saldo"] - costo
+
         print("Viaje aceptado.")
-        print(f"Se cobraron ${costo:.2f}")
         print(f"Saldo restante: ${datos['saldo']:.2f}")
-        lista.append("Viaje pagado")
+
+        # Se registra el viaje en el historial
+        agregar_historial(lista, f"Viaje pagado - ${costo:.2f}")
+
     else:
-        # Si no hay saldo, revisamos las oportunidades
+        # Si no hay suficiente saldo, se revisa si todavía puede utilizar sus dos "vidas extra"
+
         if datos["viajes"] < limite:
+            # Se suma el costo del viaje a la deuda
             datos["deuda"] = datos["deuda"] + costo
+
+            # Se suma 1 a los viajes a crédito utilizados
             datos["viajes"] = datos["viajes"] + 1
-            print("Saldo insuficiente, pero el viaje fue aceptado.")
+
+            print("Saldo insuficiente, pero el viaje fue aceptado")
             print(f"Deuda: ${datos['deuda']:.2f}")
+
+            # Se calcula cuántas oportunidades quedan
             print(
                 f"Oportunidades restantes: "
                 f"{limite - datos['viajes']}"
             )
-            lista.append("Viaje a crédito")
+
+            # Se guarda el movimiento
+            agregar_historial(
+                lista,
+                f"Viaje a crédito - ${costo:.2f}")
+
         else:
-            print("Tarjeta bloqueada.")
-            print("Ya utilizó sus 2 oportunidades.")
-            print(
-                f"Debe pagar su deuda de "
-                f"${datos['deuda']:.2f}"
-            )
-            lista.append("Viaje rechazado")
-# PARTE 3 - RECARGA
-# Temas 5, 6 y 15
+            # Si ya utilizó las 2 oportunidades, no puede viajar
+            print("Tarjeta bloqueada")
+            print(f"Debe pagar ${datos['deuda']:.2f}")
+
+            # Se guarda también el viaje rechazado
+            agregar_historial(
+                lista,
+                "Viaje rechazado")
+
+
+# PARTE 4 - RECARGA
+
 def recargar(datos, lista):
+    while True:
 
-    print("RECARGA")
-    try:
-        recarga = float(
-            input("Ingrese cantidad a recargar: $")
-        )
-    except ValueError:
-        print("Escriba un número válido.")
-        return
-    if recarga <= 0:
-        print("La recarga debe ser mayor a 0.")
-        return
-    # Si hay deuda
-    if datos["deuda"] > 0:
-        # La recarga alcanza para pagarla
-        if recarga >= datos["deuda"]:
-            recarga = recarga - datos["deuda"]
-            datos["deuda"] = 0
-            datos["viajes"] = 0
+        print("RECARGA")
 
-            # Lo que sobra se convierte en saldo
-            datos["saldo"] = datos["saldo"] + recarga
-            print("Se pagó el adeudo.")
-            print("La tarjeta ha sido desbloqueada.")
-            print(
-                f"Saldo disponible: ${datos['saldo']:.2f}"
-            )
-            lista.append("Se pagó la deuda")
+        # Lista con las denominaciones aceptadas
+        monedas = [1, 2, 5, 10, 20, 50, 100, 200, 500]
+
+        # Aquí se va acumulando el valor total de las monedas y billetes
+        recarga = 0
+
+        # for recorre cada denominación de la lista
+        for dinero in monedas:
+
+            # Este while sirve para volver a preguntar si el usuario mete un valor incorrecto
+            while True:
+                try:
+                    cantidad = int(
+                        input(f"¿Cuántos de ${dinero}? ")
+                    )
+
+                    # NO PERMITE DINERO NEGATIVO!!!
+                    if cantidad < 0:
+                        print("No puede ingresar números negativos")
+                        continue
+
+                    # Se multiplica la denominación por la cantidad
+                    recarga = recarga + dinero * cantidad
+                    break
+
+                except ValueError:
+                    # Si escribe letras o algo que no sea un entero, el programa no se rompe
+                    print("Escriba un número entero")
+
+        # No se puede hacer una recarga de $0
+        if recarga == 0:
+            print("Debe ingresar al menos una moneda o billete")
+
+            # Regresa al inicio del menú de recarga
+            continue
+        print(f"Total: ${recarga:.2f}")
+
+        # Revisa si el usuario tiene una deuda
+        if datos["deuda"] > 0:
+
+            # Guarda el valor de la deuda antes de modificarlo
+            deuda = datos["deuda"]
+            if recarga >= datos["deuda"]:
+                recarga = recarga - datos["deuda"]
+                datos["deuda"] = 0
+                datos["viajes"] = 0
+                datos["saldo"] = datos["saldo"] + recarga
+                print("Se pagó el adeudo.")
+                print("Tarjeta desbloqueada.")
+                print(f"Saldo: ${datos['saldo']:.2f}")
+                # Se registra la operación
+                agregar_historial(
+                    lista,
+                    f"Recarga y pago de deuda de ${deuda:.2f}"
+                )
+            else:
+                datos["deuda"] = datos["deuda"] - recarga
+                print(
+                    f"Deuda restante: ${datos['deuda']:.2f}"
+                )
+                # Se registra el abono
+                agregar_historial(
+                    lista,
+                    f"Abono de ${recarga:.2f} a la deuda"
+                )
+
         else:
-            # La recarga no alcanza
-            datos["deuda"] = datos["deuda"] - recarga
-            print("La recarga no fue suficiente.")
-            print(
-                f"Deuda restante: ${datos['deuda']:.2f}"
+            datos["saldo"] = datos["saldo"] + recarga
+
+            print(f"Nuevo saldo: ${datos['saldo']:.2f}")
+
+            agregar_historial(
+                lista,
+                f"Recarga normal - ${recarga:.2f}"
             )
-
-            lista.append("Abono a la deuda")
-    else:
-        # Si no hay deuda, todo se suma al saldo
-        datos["saldo"] = datos["saldo"] + recarga
-
-        print("Recarga realizada correctamente.")
-        print(
-            f"Nuevo saldo: ${datos['saldo']:.2f}"
-        )
-        lista.append("Recarga normal")
+        break
 
 
-# PARTE 4 - HISTORIAL
-# Tema 9 y Tema 8
+# PARTE 5 - VER HISTORIAL
 def ver_historial(lista):
 
-    print("HISTORIAL")
     if len(lista) == 0:
-        print("No hay operaciones.")
+        print("No hay operaciones")
+
     else:
         for i in range(len(lista)):
-            print(f"{i + 1}. {lista[i]}")
 
-# PARTE 5 - GUARDAR HISTORIAL
-# Temas 17, 18, 19 y 20
+            # Saca los dos valores de la tupla
+            fecha, texto = lista[i]
+
+            # Muestra la posición, la fecha y la operación
+            print(f"{i + 1}. {fecha} - {texto}")
+
+
+# PARTE 6 - ARCHIVOS
 def guardar(lista):
+
     try:
-        # "a" = agregar información
+        # "a" significa agregar información al archivo
+        # with hace que el archivo se cierre automáticamente
+
         with open(
             "historial_qrobus.txt",
             "a",
             encoding="utf-8"
         ) as archivo:
-            for dato in lista:
 
-                archivo.write(dato + "\n")
-        print("Historial guardado.")
+            # Recorremos todas las operaciones de la lista
+            for dato in lista:
+                fecha, texto = dato
+
+                # write escribe texto dentro del archivo
+                archivo.write(
+                    f"{fecha} - {texto}\n"
+                )
+
+        print("Historial guardado")
+
     except PermissionError:
-        print("No se pudo guardar el archivo.")
+        # Este error aparece si no se tiene permiso para escribir en el archivo
+        print("No se pudo guardar el archivo")
+
+
 def leer():
+
     try:
+        # "r" significa leer el archivo
+
         with open(
             "historial_qrobus.txt",
             "r",
             encoding="utf-8"
         ) as archivo:
-            texto = archivo.read()
-        print("HISTORIAL GUARDADO")
-        if texto == "":
-            print("El archivo está vacío.")
-        else:
-            print(texto)
-    except FileNotFoundError:
-        print("Todavía no existe el archivo.")
-    except PermissionError:
-        print("No se pudo leer el archivo.")
 
-# PARTE 6 - MENÚ
-# Temas 5, 6 y 8
+            # read() obtiene todo el contenido
+            texto = archivo.read()
+
+        print("HISTORIAL GUARDADO")
+        print(texto)
+
+    except FileNotFoundError:
+        # Este error aparece si el archivo no existe
+        print("El archivo no existe")
+
+    except PermissionError:
+        # Este error aparece si no se tiene permiso para leer
+        print("No se pudo leer el archivo")
+
+
+# PARTE 7 - MENÚ
 def menu(datos, lista):
+
     while True:
+
         print("TARJETA QROBUS")
         print("1. Hacer viaje")
         print("2. Recargar")
@@ -162,41 +254,65 @@ def menu(datos, lista):
         print("6. Leer historial")
         print("7. Salir")
         opcion = input("Seleccione una opción: ")
+
         if opcion == "1":
             cobrar(datos, lista)
+
         elif opcion == "2":
             recargar(datos, lista)
+
         elif opcion == "3":
             mostrar(datos)
+
         elif opcion == "4":
             ver_historial(lista)
+
         elif opcion == "5":
             guardar(lista)
+
         elif opcion == "6":
             leer()
+
         elif opcion == "7":
-            print("Gracias por utilizar Qrobus.")
+            print("Gracias por utilizar Qrobus")
+
+
             break
+
         else:
-            print("Opción no válida.")
-# PARTE 7 - INICIO DEL PROGRAMA
-# Temas 1, 2, 3 y 4
+            print("Opción no válida")
 
+
+# PARTE 8 - INICIO DEL PROGRAMA
 print("SISTEMA QROBUS")
-nombre = input("Escriba su nombre: ")
-try:
-    saldo = float(
-        input("Inserte saldo actual: $")
-    )
-except ValueError:
-    print("Saldo inválido.")
-    saldo = 0
-# Crear los datos de la tarjeta
-datos = hacer_datos(nombre, saldo)
-# Lista para guardar operaciones
-lista = []
-print("Tarjeta creada correctamente.")
-mostrar(datos)
-# Iniciar el sistema
-menu(datos, lista)
 
+nombre = input("Escriba su nombre: ")
+while True:
+
+    try:
+        saldo = float(
+            input("Inserte saldo actual: $")
+        )
+
+        # Se revisa que no sea negativo
+        if saldo < 0:
+            print("El saldo no puede ser negativo")
+
+            # Regresa a pedir el saldo
+            continue
+
+        # break termina el ciclo porque el saldo es válido
+        break
+
+    except ValueError:
+        # Si se escriben letras, se controla el error
+        print("Escriba un número válido")
+
+datos = hacer_datos(nombre, saldo)
+
+# Se crea una lista vacía para guardar el historial
+lista = []
+
+print("Tarjeta creada correctamente")
+mostrar(datos)
+menu(datos, lista)
